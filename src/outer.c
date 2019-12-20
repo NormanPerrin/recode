@@ -172,6 +172,37 @@ declare_iconv (RECODE_OUTER outer, const char *name, const char *iconv_name)
   single->init_routine = NULL;
   single->transform_routine = internal_iconv;
 
+  char *translit_name;
+  if (asprintf (&translit_name, "%s-TRANSLIT", name) == -1)
+    error (EXIT_FAILURE, errno, "asprintf");
+
+  char *translit_iconv_name;
+  if (asprintf (&translit_iconv_name, "%s//TRANSLIT", iconv_name) == -1)
+    error (EXIT_FAILURE, errno, "asprintf");
+
+  if (alias = find_alias (outer, translit_name, SYMBOL_CREATE_CHARSET),
+	!alias)
+      return false;
+  assert(alias->symbol->type == RECODE_CHARSET);
+
+  alias->symbol->iconv_name = translit_iconv_name;
+
+  if (single = new_single_step (outer), !single)
+    return false;
+  single->before = alias->symbol;
+  single->after = outer->iconv_pivot;
+  single->quality = outer->quality_variable_to_variable;
+  single->init_routine = NULL;
+  single->transform_routine = internal_iconv;
+
+  if (single = new_single_step (outer), !single)
+    return false;
+  single->before = outer->iconv_pivot;
+  single->after = alias->symbol;
+  single->quality = outer->quality_variable_to_variable;
+  single->init_routine = NULL;
+  single->transform_routine = internal_iconv;
+
   return true;
 }
 
